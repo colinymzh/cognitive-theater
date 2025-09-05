@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIND-C Inner Theater</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            overflow: hidden; 
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: #e9ebee;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #d1d1d1;
+            flex-shrink: 0;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2em;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .new-chat-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: background-color 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .history-item:hover {
+            background-color: #d1d9e0;
+        }
+
+        .history-item.active {
+            background-color: #c0c9d1;
+            font-weight: bold;
+        }
+        
+        .history-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0 5px;
+            visibility: hidden;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+        }
+
+        .history-item:hover .delete-btn {
+            visibility: visible;
+        }
+
+        .delete-btn:hover {
+            opacity: 1;
+            color: #d9534f;
+        }
+
+        .main-chat {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+        }
+        
+        .chat-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .message-content {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+        }
+        .message .speaker {
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .message .text {
+            padding: 10px 15px;
+            border-radius: 18px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        .message.user .message-content {
+            align-items: flex-end;
+        }
+        .message.user .text {
+            background-color: #007bff;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.ai {
+            flex-direction: row;
+        }
+        .message.ai .text {
+            background-color: #e9ebee;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #f4f7f9;
+        }
+        #user-input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 16px;
+            outline: none;
+        }
+        #summon-shadow-btn {
+            margin-right: 10px;
+            padding: 10px 15px;
+            border: 1px solid #6c757d;
+            background-color: #f8f9fa;
+            color: #495057;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+        #summon-shadow-btn:hover {
+            background-color: #e2e6ea;
+        }
+        #send-button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+        #send-button:disabled, #summon-shadow-btn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+            border-color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <h2>Conversation History</h2>
+            <button class="new-chat-btn" id="new-chat-btn">Create a new conversation</button>
+            <ul class="history-list" id="history-list">
+                </ul>
+        </div>
+
+        <div class="main-chat">
+            <div class="chat-container">
+                <div class="chat-box" id="chat-box">
+                    <p style="color: #888; text-align: center; margin-top: 20px;">
+                        Welcome to the Inner Theater.<br>Click "Create a new conversation" on the left to start, or select a previous conversation to continue.
+                    </p>
+                </div>
+                <div class="input-area">
+                    <button id="summon-shadow-btn" title="Invite your inner voice to speak"> Summon Shadow </button>
+                    
+                    <input type="text" id="user-input" placeholder="Please share your concerns..." autocomplete="off">
+                    <button id="send-button">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const historyList = document.getElementById('history-list');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const summonShadowBtn = document.getElementById('summon-shadow-btn');
+
+    let currentSessionId = null;
+    let isFirstMessage = false;
+
+    const avatarMap = {
+        "You": "assets/you.png",
+        "You (Initial concern)": "assets/you.png",
+        "Lucian": "assets/lucian.png",
+        "Shadow": "assets/shadow.png",
+        "Sara": "assets/sara.png",
+        "David": "assets/david.png",
+        "default": "assets/default.png" 
+    };
+    
+
+    async function loadSessionsSidebar() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/sessions');
+            if (!response.ok) throw new Error('Failed to fetch sessions');
+            const sessions = await response.json();
+            
+            historyList.innerHTML = ''; 
+            sessions.forEach(session => {
+                const li = document.createElement('li');
+                li.classList.add('history-item');
+                li.dataset.sessionId = session.session_id;
+
+                const titleSpan = document.createElement('span');
+                titleSpan.classList.add('history-title');
+                titleSpan.textContent = session.title;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.title = "Delete this conversation";
+
+                deleteBtn.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    if (confirm(`Are you sure you want to permanently delete conversation: "${session.title}"?`)) {
+                        await deleteConversation(session.session_id);
+                    }
+                });
+
+                li.addEventListener('click', () => loadConversation(session.session_id));
+                
+                li.appendChild(titleSpan);
+                li.appendChild(deleteBtn);
+                historyList.appendChild(li);
+            });
+
+            const lastSessionId = localStorage.getItem('currentSessionId');
+            if (lastSessionId && sessions.some(s => s.session_id === lastSessionId)) {
+                loadConversation(lastSessionId);
+            }
+        } catch (error) {
+            console.error("Error loading session history:", error);
+        }
+    }
+
+    async function loadConversation(sessionId) {
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/sessions/${sessionId}`);
+            if (!response.ok) throw new Error('Failed to load session history');
+            const data = await response.json();
+            
+            chatBox.innerHTML = '';
+            data.history.forEach(line => appendMessageFromHistory(line));
+            
+            currentSessionId = sessionId;
+            localStorage.setItem('currentSessionId', sessionId); 
+
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.sessionId === sessionId);
+            });
+
+            activateChat(false);
+        } catch (error) {
+            console.error(`Error loading conversation ${sessionId}:`, error);
+        }
+    }
+    
+    async function startConversation(problem) {
+        const response = await fetch('http://127.0.0.1:8000/session/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initial_problem: problem })
+        });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                await loadSessionsSidebar();
+                break;
+            };
+            const chunk = decoder.decode(value, { stream: true });
+            const jsonObjects = chunk.split('\n').filter(str => str.trim() !== '');
+            for (const jsonObjStr of jsonObjects) {
+                try {
+                    const messageData = JSON.parse(jsonObjStr);
+                    if (messageData.type === 'metadata') {
+                        currentSessionId = messageData.session_id;
+                        localStorage.setItem('currentSessionId', currentSessionId);
+                    } else {
+                        appendMessageToChatWindow(messageData.speaker, messageData.text);
+                    }
+                } catch (e) { console.error("Error parsing JSON chunk:", jsonObjStr); }
+            }
+        }
+    }
+
+    async function continueConversation(message) {
+        if (!currentSessionId) return;
+        const response = await fetch('http://127.0.0.1:8000/session/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: currentSessionId, user_input: message })
+        });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+                await loadSessionsSidebar();
+                break;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            const jsonObjects = chunk.split('\n').filter(str => str.trim() !== '');
+            for (const jsonObjStr of jsonObjects) {
+                try {
+                    const messageData = JSON.parse(jsonObjStr);
+                    appendMessageToChatWindow(messageData.speaker, messageData.text);
+                } catch (e) { console.error("Error parsing JSON chunk:", jsonObjStr); }
+            }
+        }
+    }
+
+    async function deleteConversation(sessionId) {
+        try {
+            const response = await fetch(`http://127.0.0.1:8000/sessions/${sessionId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) throw new Error('Failed to delete session');
+            
+            if (currentSessionId === sessionId) {
+                currentSessionId = null;
+                localStorage.removeItem('currentSessionId');
+                chatBox.innerHTML = '<p style="color: #888; text-align: center;">The current conversation has been deleted. Please create a new conversation or select a different history.</p>';
+                userInput.disabled = true;
+                sendButton.disabled = true;
+                summonShadowBtn.disabled = true;
+            }
+            await loadSessionsSidebar();
+        } catch (error) {
+            console.error(`Error deleting session ${sessionId}:`, error);
+        }
+    }
+
+    function activateChat(isNew) {
+        userInput.disabled = false;
+        sendButton.disabled = false;
+        summonShadowBtn.disabled = false;
+        userInput.placeholder = isNew ? "Please share your concerns..." : "Please respond...";
+        isFirstMessage = isNew;
+        if (isNew) {
+            chatBox.innerHTML = '<p style="color: #888; text-align: center;">A new conversation has been created, please start sharing...</p>';
+            document.querySelectorAll('.history-item').forEach(item => item.classList.remove('active'));
+        }
+    }
+
+    function appendMessageFromHistory(historyLine) {
+        const parts = historyLine.split(': ');
+        const speaker = parts[0];
+        const text = parts.slice(1).join(': ');
+        appendMessageToChatWindow(speaker, text);
+    }
+
+    function appendMessageToChatWindow(speaker, text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        const avatarImg = document.createElement('img');
+        avatarImg.classList.add('avatar');
+        avatarImg.src = avatarMap[speaker] || avatarMap['default'];
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('message-content');
+        const speakerDiv = document.createElement('div');
+        speakerDiv.classList.add('speaker');
+        speakerDiv.textContent = speaker;
+        const textDiv = document.createElement('div');
+        textDiv.classList.add('text');
+        textDiv.textContent = text;
+        if (speaker.includes("You")) { messageDiv.classList.add('user'); } 
+        else { messageDiv.classList.add('ai'); }
+        contentDiv.appendChild(speakerDiv);
+        contentDiv.appendChild(textDiv);
+        messageDiv.appendChild(avatarImg);
+        messageDiv.appendChild(contentDiv);
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
+    async function handleSend() {
+        const message = userInput.value.trim();
+        if (!message) return;
+        
+        const userSpeaker = isFirstMessage ? "You (Initial concern)" : "You";
+        appendMessageToChatWindow(userSpeaker, message);
+        userInput.value = ''; 
+
+        sendButton.disabled = true;
+        summonShadowBtn.disabled = true;
+        userInput.disabled = true;
+        
+        if (isFirstMessage) {
+            await startConversation(message);
+        } else {
+            await continueConversation(message);
+        }
+        
+        sendButton.disabled = false;
+        summonShadowBtn.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+    }
+
+    newChatBtn.addEventListener('click', () => {
+        currentSessionId = null;
+        localStorage.removeItem('currentSessionId');
+        activateChat(true);
+    });
+    
+    summonShadowBtn.addEventListener('click', () => {
+        if(userInput.disabled) return;
+        const magicPhrase = "I want to hear how Shadow is feeling right now.";
+        userInput.value = magicPhrase;
+        handleSend();
+    });
+
+    sendButton.addEventListener('click', handleSend);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !userInput.disabled) {
+            handleSend();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadSessionsSidebar);
+</script>
+</body>
+</html>

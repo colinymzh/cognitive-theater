@@ -1,0 +1,21 @@
+# ====== Core Web Framework ======
+# Used to build the API backend and serve HTTP requests.
+fastapi==0.111.0
+uvicorn==0.30.1
+
+# ====== Data Validation ======
+# Required by FastAPI for request and response model validation.
+pydantic==2.7.4
+
+# ====== AI & Language Model Orchestration ======
+# Core library for building applications with LLMs.
+langchain==0.2.6
+langchain-core==0.2.11
+
+# ====== External API Clients ======
+# Client library for interacting with the Poe API.
+fastapi-poe==1.0.1
+
+# ====== Configuration Management ======
+# For loading environment variables from a .env file (like API keys).
+python-dotenv==1.0.1
