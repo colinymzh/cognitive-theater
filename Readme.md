@@ -1,4 +1,4 @@
-# MIND-C Inner Theater
+# Cognitive Theater
 
 > An interactive multi-agent chat application designed to simulate a Cognitive Behavioral Therapy (CBT) group session. Users can explore their concerns through a guided conversation with a cast of AI agents, each playing a unique role in the therapeutic process.
 
